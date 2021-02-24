@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -14,11 +15,12 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
     public int i = 0;
-    private TextView t_lat, t_long, t_alt;
+//    private TextView t_lat, t_long, t_alt;
     private Button button;
     private LocationManager locationManager;
     private LocationListener locationListener;
@@ -29,20 +31,29 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         button = (Button) findViewById(R.id.button);
-        t_lat = (TextView) findViewById(R.id.editTextLatitude);
-        t_long = (TextView) findViewById(R.id.editTextLongitude);
-        t_alt = (TextView) findViewById(R.id.editTextAltitude);
+        EditText t_lat = (EditText) findViewById(R.id.editTextLatitude);
+        EditText t_long = (EditText) findViewById(R.id.editTextLongitude);
+        EditText t_alt = (EditText) findViewById(R.id.editTextAltitude);
 
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(@NonNull Location location) {
-                t_alt.setText("\n" + location.getAltitude());
-                t_lat.setText("\n" + location.getLatitude());
-                t_long.setText("\n" + location.getLongitude());
+
+
+                t_alt.setText("\n" + Double.toString(location.getAltitude()));
+                t_lat.setText("\n" + Double.toString(location.getLatitude()));
+                t_long.setText("\n" + Double.toString(location.getLongitude()));
             }
 
+            @Override
+            public void onProviderEnabled(@NonNull String provider) {
+            }
 
+            @Override
+            public void onStatusChanged(String provider, int status, Bundle extras) {
+
+            }
 
             public void onProciderDisabled(String s){
                 Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
@@ -78,6 +89,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    @SuppressLint("MissingPermission")
     private void configureButton() {
         locationManager.requestLocationUpdates("gps", 5000, 0, locationListener);
     }
