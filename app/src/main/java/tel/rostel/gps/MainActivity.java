@@ -18,7 +18,7 @@ import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity {
     public int i = 0;
-    private TextView t;
+    private TextView t_lat, t_long, t_alt;
     private Button button;
     private LocationManager locationManager;
     private LocationListener locationListener;
@@ -29,12 +29,17 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         button = (Button) findViewById(R.id.button);
-        t = (TextView) findViewById(R.id.editTextTextMultiLine);
+        t_lat = (TextView) findViewById(R.id.editTextLatitude);
+        t_long = (TextView) findViewById(R.id.editTextLongitude);
+        t_alt = (TextView) findViewById(R.id.editTextAltitude);
+
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(@NonNull Location location) {
-                t.append("\n" + location.getLatitude() + " " + location.getLongitude());
+                t_alt.setText("\n" + location.getAltitude());
+                t_lat.setText("\n" + location.getLatitude());
+                t_long.setText("\n" + location.getLongitude());
             }
 
 
@@ -54,6 +59,12 @@ public class MainActivity extends AppCompatActivity {
         }
 //        onRequestPermissionsResult();
 
+
+
+
+
+
+
     }
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -72,11 +83,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public void click (View v){
-        t= (TextView)findViewById(R.id.editTextTextMultiLine);
-        t.append("\n" + i);
-        i = i+1;
+//    public void click (View v){
+//        t_lat= (TextView) findViewById(R.id.editTextLattitude);
+//        t_long= (TextView) findViewById(R.id.editTextLongtitude);
+//        t_alt= (TextView) findViewById(R.id.editTextAltitude);
+//        t_lat.append("\n" + i);
+//        t_long.append("\n" + i);
+//        t_alt.append("\n" + i);
 
-    }
+
+//        i = i+1;
+
+//    }
+
+
 
 }
