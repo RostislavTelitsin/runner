@@ -8,32 +8,55 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+
+import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Chronometer;
 import android.widget.EditText;
-import android.widget.TextView;
+
+
 
 public class MainActivity extends AppCompatActivity {
     public int i = 0;
-//    private TextView t_lat, t_long, t_alt;
     private Button button;
+    private Button button_reset;
     private LocationManager locationManager;
     private LocationListener locationListener;
+    public Chronometer chronometer;
+    private boolean isRunning = false;
+    private long pauseOffset;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        chronometer = findViewById(R.id.chronometer);
         button = (Button) findViewById(R.id.button);
+        button_reset = (Button) findViewById(R.id.resetButton);
         EditText t_lat = (EditText) findViewById(R.id.editTextLatitude);
         EditText t_long = (EditText) findViewById(R.id.editTextLongitude);
         EditText t_alt = (EditText) findViewById(R.id.editTextAltitude);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                crono();
+            }
+        });
+
+        button_reset.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stopRun();
+            }
+        });
 
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         locationListener = new LocationListener() {
@@ -68,9 +91,6 @@ public class MainActivity extends AppCompatActivity {
         }else {
             configureButton();
         }
-//        onRequestPermissionsResult();
-
-
 
 
 
@@ -95,18 +115,33 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-//    public void click (View v){
-//        t_lat= (TextView) findViewById(R.id.editTextLattitude);
-//        t_long= (TextView) findViewById(R.id.editTextLongtitude);
-//        t_alt= (TextView) findViewById(R.id.editTextAltitude);
-//        t_lat.append("\n" + i);
-//        t_long.append("\n" + i);
-//        t_alt.append("\n" + i);
 
+    public void crono() {
+        if (isRunning==false) {
+            button.setBackgroundColor(Color.RED);
+            button.setText("Pause");
 
-//        i = i+1;
+            chronometer.setBase(SystemClock.elapsedRealtime() - pauseOffset);
+            chronometer.start();
+            isRunning = true;
+        }else {
+            button.setText("Continue");
+            chronometer.stop();
+            pauseOffset = SystemClock.elapsedRealtime() - chronometer.getBase();
+            isRunning = false;
+        }
+    }
 
-//    }
+    public void stopRun() {
+        if (isRunning==false) {
+            chronometer.stop();
+            chronometer.setBase(SystemClock.elapsedRealtime());
+            pauseOffset = 0;
+            button.setText("Start");
+            button.setBackgroundColor(0xFF6200EE);
+
+        }
+    }
 
 
 
