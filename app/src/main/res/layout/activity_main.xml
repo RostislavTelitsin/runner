@@ -15,7 +15,7 @@
 
     <Button
         android:id="@+id/button"
-        android:layout_width="120dp"
+        android:layout_width="140dp"
         android:layout_height="60dp"
         android:layout_marginTop="342dp"
         android:text="Start"
@@ -28,8 +28,8 @@
 
     <Button
         android:id="@+id/resetButton"
-        android:layout_width="120dp"
-        android:layout_height="35dp"
+        android:layout_width="140dp"
+        android:layout_height="45dp"
         android:layout_marginTop="342dp"
         android:text="Stop"
         app:layout_constraintBottom_toBottomOf="parent"
