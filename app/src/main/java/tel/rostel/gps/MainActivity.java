@@ -14,6 +14,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.view.GestureDetector;
@@ -37,9 +38,11 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private long pauseOffset;
     private ProgressBar progressBar;
     private GestureDetector gestureDetector;
-    private boolean isButtonResedPressed = false;
     private volatile boolean stopthread = false;
+    private boolean ifResset = false;
+    private Handler mainHandler = new Handler();
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                button_reset.setVisibility(View.VISIBLE);
+
                 crono();
             }
         });
@@ -69,13 +72,12 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         locationListener = new LocationListener() {
+            @SuppressLint("SetTextI18n")
             @Override
             public void onLocationChanged(@NonNull Location location) {
-
-
-                t_alt.setText("\n" + Double.toString(location.getAltitude()));
-                t_lat.setText("\n" + Double.toString(location.getLatitude()));
-                t_long.setText("\n" + Double.toString(location.getLongitude()));
+                t_alt.setText(Double.toString(location.getAltitude()));
+                t_lat.setText(Double.toString(location.getLatitude()));
+                t_long.setText(Double.toString(location.getLongitude()));
             }
 
             @Override
@@ -96,7 +98,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             requestPermissions(new String[]{
                 Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.INTERNET
             }, 10);
-            return;
         }else {
             configureButton();
         }
@@ -122,13 +123,14 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         if (isRunning==false) {
             button.setBackgroundColor(Color.RED);
             button.setText("Pause");
-
+            button_reset.setVisibility(View.INVISIBLE);
             chronometer.setBase(SystemClock.elapsedRealtime() - pauseOffset);
             chronometer.start();
             isRunning = true;
 
         }else {
             button.setText("Continue");
+            button_reset.setVisibility(View.VISIBLE);
             chronometer.stop();
             pauseOffset = SystemClock.elapsedRealtime() - chronometer.getBase();
             isRunning = false;
@@ -147,17 +149,23 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         if(event.getAction() == MotionEvent.ACTION_DOWN) {
+            stopthread = false;
             progressBar.setVisibility(View.VISIBLE);
-            isButtonResedPressed = true;
             stopRun();
 
 
 
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
             progressBar.setVisibility(View.INVISIBLE);
-            isButtonResedPressed = false;
             stopthread = true;
-            button_reset.setVisibility(View.INVISIBLE);
+            if (ifResset) {
+
+
+                isRunning = false;
+                button_reset.setVisibility(View.INVISIBLE);
+                ifResset = false;
+            }
+
         }
         return true;
     }
@@ -185,14 +193,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     @Override
     public void onLongPress(MotionEvent e) {
 
-        chronometer.stop();
-        chronometer.setBase(SystemClock.elapsedRealtime());
-        pauseOffset = 0;
-        button.setText("Start");
-        button.setBackgroundColor(0xFF6200EE);
-        isButtonResedPressed = false;
-        isRunning = false;
-        button_reset.setVisibility(View.INVISIBLE);
 
     }
 
@@ -207,32 +207,34 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         @Override
         public void run(){
             for (int x =0; x<10; x++) {
-                if (stopthread)
+                if (stopthread) {
+                    stopthread=false;
                     return;
+                }
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
-                if (isButtonResedPressed = false) {
-                    progressBar.setVisibility(View.INVISIBLE);
-                    break;}
-                else {if (x==9) {
-                    progressBar.setVisibility(View.INVISIBLE);
-                    chronometer.stop();
-                    chronometer.setBase(SystemClock.elapsedRealtime());
-                    pauseOffset = 0;
-                    button.setText("Start");
-                    button.setBackgroundColor(0xFF6200EE);
-                    isButtonResedPressed = false;
-                    isRunning = false;
+                if (x==9) {
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            chronometer.stop();
+                            chronometer.setBase(SystemClock.elapsedRealtime());
+                            pauseOffset = 0;
+                            button.setText("Start");
+                            button.setBackgroundColor(0xFF6200EE);
+                            progressBar.setVisibility(View.INVISIBLE);
+                            ifResset = true;
+                        }
+                    });
+
+
+
 
                 }}
-
-
-
             }
         }
-    }
 
 }
