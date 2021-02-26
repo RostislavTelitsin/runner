@@ -25,6 +25,7 @@ import android.widget.Button;
 import android.widget.Chronometer;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener, GestureDetector.OnGestureListener {
@@ -40,7 +41,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private GestureDetector gestureDetector;
     private volatile boolean stopthread = false;
     private boolean ifResset = false;
-    private Handler mainHandler = new Handler();
+    private final Handler mainHandler = new Handler();
+    private double lat1=0, lat2=0, long1=0, long2=0, alt1=0, alt2=0, distance = 0;
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
@@ -53,10 +55,17 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         EditText t_lat = (EditText) findViewById(R.id.editTextLatitude);
         EditText t_long = (EditText) findViewById(R.id.editTextLongitude);
         EditText t_alt = (EditText) findViewById(R.id.editTextAltitude);
+        TextView distanceText = (TextView) findViewById(R.id.textViewDistance);
+
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
         gestureDetector = new GestureDetector(this, this);
         button_reset.setOnTouchListener(this);
         progressBar.setVisibility(View.INVISIBLE);
+
+
+
+
+
 
         button_reset.setVisibility(View.INVISIBLE);
 
@@ -72,12 +81,38 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         locationListener = new LocationListener() {
-            @SuppressLint("SetTextI18n")
+            @SuppressLint(value = "SetTextI18n")
             @Override
             public void onLocationChanged(@NonNull Location location) {
                 t_alt.setText(Double.toString(location.getAltitude()));
                 t_lat.setText(Double.toString(location.getLatitude()));
                 t_long.setText(Double.toString(location.getLongitude()));
+                if (isRunning) {
+                    if (lat1==0 && long1==0){
+                        alt1=alt2;
+                        lat1=lat2;
+                        long1=long2;
+                        alt2=location.getAltitude();
+                        lat2=location.getLatitude();
+                        long2=location.getLongitude();
+                    } else {
+                        alt1=alt2;
+                        lat1=lat2;
+                        long1=long2;
+                        alt2=location.getAltitude();
+                        lat2=location.getLatitude();
+                        long2=location.getLongitude();
+                        distance = distance + distanceCalc(alt1, lat1, long1, alt2, lat2, long2);
+                        distanceText.setText(String.format("%.2f", distance). toString() + "км");
+                    }
+                }else {
+                    alt1=alt2;
+                    lat1=lat2;
+                    long1=long2;
+                    alt2=location.getAltitude();
+                    lat2=location.getLatitude();
+                    long2=location.getLongitude();
+                }
             }
 
             @Override
@@ -199,6 +234,19 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
         return false;
+    }
+
+    public double distanceCalc (double alt1, double lat1, double long1, double alt2, double lat2, double long2) {
+
+        double pi = 3.14159265;
+        double zemR=6371;
+        double sin_lat = Math.sin(Math.toRadians((lat2 - lat1)/2));
+        double sin_longt = Math.sin(Math.toRadians((long2 - long1)/2));
+        double alt = alt2 - alt1;
+        double rez_temp = sin_lat * sin_lat + (sin_longt * sin_longt *Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)));
+
+        double rez = zemR * 2 * Math.atan2(Math.sqrt(rez_temp), Math.sqrt(1- rez_temp));
+        return rez;
     }
 
 
