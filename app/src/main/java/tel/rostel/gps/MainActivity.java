@@ -16,14 +16,17 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.view.GestureDetector;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnLongClickListener;
 import android.widget.Button;
 import android.widget.Chronometer;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 
 
-
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnTouchListener, GestureDetector.OnGestureListener {
     public int i = 0;
     private Button button;
     private Button button_reset;
@@ -32,7 +35,10 @@ public class MainActivity extends AppCompatActivity {
     public Chronometer chronometer;
     private boolean isRunning = false;
     private long pauseOffset;
-
+    private ProgressBar progressBar;
+    private GestureDetector gestureDetector;
+    private boolean isButtonResedPressed = false;
+    private volatile boolean stopthread = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,19 +50,22 @@ public class MainActivity extends AppCompatActivity {
         EditText t_lat = (EditText) findViewById(R.id.editTextLatitude);
         EditText t_long = (EditText) findViewById(R.id.editTextLongitude);
         EditText t_alt = (EditText) findViewById(R.id.editTextAltitude);
+        progressBar = (ProgressBar) findViewById(R.id.progressBar);
+        gestureDetector = new GestureDetector(this, this);
+        button_reset.setOnTouchListener(this);
+        progressBar.setVisibility(View.INVISIBLE);
+
+        button_reset.setVisibility(View.INVISIBLE);
+
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                button_reset.setVisibility(View.VISIBLE);
                 crono();
             }
         });
 
-        button_reset.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                stopRun();
-            }
-        });
+
 
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         locationListener = new LocationListener() {
@@ -91,11 +100,6 @@ public class MainActivity extends AppCompatActivity {
         }else {
             configureButton();
         }
-
-
-
-
-
     }
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
@@ -104,9 +108,7 @@ public class MainActivity extends AppCompatActivity {
                 if (grantResults.length>0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
                     configureButton();
                 return;
-
         }
-
     }
 
     @SuppressLint("MissingPermission")
@@ -124,25 +126,113 @@ public class MainActivity extends AppCompatActivity {
             chronometer.setBase(SystemClock.elapsedRealtime() - pauseOffset);
             chronometer.start();
             isRunning = true;
+
         }else {
             button.setText("Continue");
             chronometer.stop();
             pauseOffset = SystemClock.elapsedRealtime() - chronometer.getBase();
             isRunning = false;
+
         }
     }
 
     public void stopRun() {
-        if (isRunning==false) {
-            chronometer.stop();
-            chronometer.setBase(SystemClock.elapsedRealtime());
-            pauseOffset = 0;
-            button.setText("Start");
-            button.setBackgroundColor(0xFF6200EE);
+        progressBar.setVisibility(View.VISIBLE);
+        ExtThread extThread = new ExtThread();
+        extThread.start();
+
 
         }
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        if(event.getAction() == MotionEvent.ACTION_DOWN) {
+            progressBar.setVisibility(View.VISIBLE);
+            isButtonResedPressed = true;
+            stopRun();
+
+
+
+        } else if (event.getAction() == MotionEvent.ACTION_UP) {
+            progressBar.setVisibility(View.INVISIBLE);
+            isButtonResedPressed = false;
+            stopthread = true;
+            button_reset.setVisibility(View.INVISIBLE);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean onDown(MotionEvent e) {
+        return false;
+    }
+
+    @Override
+    public void onShowPress(MotionEvent e) {
+
+    }
+
+    @Override
+    public boolean onSingleTapUp(MotionEvent e) {
+        return false;
+    }
+
+    @Override
+    public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+        return false;
+    }
+
+    @Override
+    public void onLongPress(MotionEvent e) {
+
+        chronometer.stop();
+        chronometer.setBase(SystemClock.elapsedRealtime());
+        pauseOffset = 0;
+        button.setText("Start");
+        button.setBackgroundColor(0xFF6200EE);
+        isButtonResedPressed = false;
+        isRunning = false;
+        button_reset.setVisibility(View.INVISIBLE);
+
+    }
+
+    @Override
+    public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+        return false;
     }
 
 
+    class ExtThread extends Thread {
+
+        @Override
+        public void run(){
+            for (int x =0; x<10; x++) {
+                if (stopthread)
+                    return;
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                if (isButtonResedPressed = false) {
+                    progressBar.setVisibility(View.INVISIBLE);
+                    break;}
+                else {if (x==9) {
+                    progressBar.setVisibility(View.INVISIBLE);
+                    chronometer.stop();
+                    chronometer.setBase(SystemClock.elapsedRealtime());
+                    pauseOffset = 0;
+                    button.setText("Start");
+                    button.setBackgroundColor(0xFF6200EE);
+                    isButtonResedPressed = false;
+                    isRunning = false;
+
+                }}
+
+
+
+            }
+        }
+    }
 
 }
