@@ -33,6 +33,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private Button button;
     private Button button_reset;
     private LocationManager locationManager;
+    private TextView distanceText;
     private LocationListener locationListener;
     public Chronometer chronometer;
     private boolean isRunning = false;
@@ -55,7 +56,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         EditText t_lat = (EditText) findViewById(R.id.editTextLatitude);
         EditText t_long = (EditText) findViewById(R.id.editTextLongitude);
         EditText t_alt = (EditText) findViewById(R.id.editTextAltitude);
-        TextView distanceText = (TextView) findViewById(R.id.textViewDistance);
+        distanceText = (TextView) findViewById(R.id.textViewDistance);
 
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
         gestureDetector = new GestureDetector(this, this);
@@ -238,7 +239,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     public double distanceCalc (double alt1, double lat1, double long1, double alt2, double lat2, double long2) {
 
-        double pi = 3.14159265;
         double zemR=6371;
         double sin_lat = Math.sin(Math.toRadians((lat2 - lat1)/2));
         double sin_longt = Math.sin(Math.toRadians((long2 - long1)/2));
@@ -273,6 +273,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                             pauseOffset = 0;
                             button.setText("Start");
                             button.setBackgroundColor(0xFF6200EE);
+                            distance = 0;
+                            distanceText.setText(String.format("%.2f", distance). toString() + "км");
                             progressBar.setVisibility(View.INVISIBLE);
                             ifResset = true;
                         }
