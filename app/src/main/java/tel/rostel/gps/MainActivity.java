@@ -252,7 +252,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                             distance = 0;
                             distanceText.setText(String.format("%.2f", distance). toString() + "км");
                             progressBar.setVisibility(View.INVISIBLE);
-                            ifReset = true;
+                            ifReset = true;//workout can be reset
                         }
                     });
                 }}
