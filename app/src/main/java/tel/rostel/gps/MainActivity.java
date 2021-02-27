@@ -30,18 +30,18 @@ import android.widget.TextView;
 
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener, GestureDetector.OnGestureListener {
     public int i = 0;
-    private Button button;
-    private Button button_reset;
-    private LocationManager locationManager;
-    private TextView distanceText;
-    private LocationListener locationListener;
-    public Chronometer chronometer;
-    private boolean isRunning = false;
-    private long pauseOffset;
-    private ProgressBar progressBar;
-    private GestureDetector gestureDetector;
+    private Button button;//Button Start to start workout
+    private Button button_reset;//Button Stop to stop workout
+    private LocationManager locationManager;//GPS
+    private TextView distanceText;//distance monitor
+    private LocationListener locationListener;//GPS listener
+    public Chronometer chronometer;//timer
+    private boolean isRunning = false;//is workout running
+    private long pauseOffset;// for chronometer pause to keep correct time of workout
+    private ProgressBar progressBar;//to wait decision if workout should be stopped and reset
+//    private GestureDetector gestureDetector;
     private volatile boolean stopthread = false;
-    private boolean ifResset = false;
+    private boolean ifReset = false;
     private final Handler mainHandler = new Handler();
     private double lat1=0, lat2=0, long1=0, long2=0, alt1=0, alt2=0, distance = 0;
 
@@ -59,27 +59,22 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         distanceText = (TextView) findViewById(R.id.textViewDistance);
 
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
-        gestureDetector = new GestureDetector(this, this);
+//        gestureDetector = new GestureDetector(this, this);
         button_reset.setOnTouchListener(this);
         progressBar.setVisibility(View.INVISIBLE);
 
-
-
-
-
-
+// button Stop is invisible till pause of workout
         button_reset.setVisibility(View.INVISIBLE);
-
+//Stat chronometer and workout
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                 crono();
             }
         });
 
 
-
+//obtaining of location
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
         locationListener = new LocationListener() {
             @SuppressLint(value = "SetTextI18n")
@@ -117,13 +112,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             }
 
             @Override
-            public void onProviderEnabled(@NonNull String provider) {
-            }
-
+            public void onProviderEnabled(@NonNull String provider) {}
             @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {
-
-            }
+            public void onStatusChanged(String provider, int status, Bundle extras) {}
 
             public void onProciderDisabled(String s){
                 Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
@@ -174,32 +165,24 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         }
     }
 
-    public void stopRun() {
-        progressBar.setVisibility(View.VISIBLE);
-        ExtThread extThread = new ExtThread();
-        extThread.start();
-
-
-        }
-
+//if button stop is pressed, start new thread for timer to wait for decision if make reset of workout
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         if(event.getAction() == MotionEvent.ACTION_DOWN) {
             stopthread = false;
             progressBar.setVisibility(View.VISIBLE);
-            stopRun();
+            ExtThread extThread = new ExtThread();
+            extThread.start();
 
 
-
+//if button is released, stop timer. if timer is finished (isReset )
         } else if (event.getAction() == MotionEvent.ACTION_UP) {
             progressBar.setVisibility(View.INVISIBLE);
             stopthread = true;
-            if (ifResset) {
-
-
+            if (ifReset) {
                 isRunning = false;
                 button_reset.setVisibility(View.INVISIBLE);
-                ifResset = false;
+                ifReset = false;
             }
 
         }
@@ -212,9 +195,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     }
 
     @Override
-    public void onShowPress(MotionEvent e) {
-
-    }
+    public void onShowPress(MotionEvent e) {}
 
     @Override
     public boolean onSingleTapUp(MotionEvent e) {
@@ -227,29 +208,24 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     }
 
     @Override
-    public void onLongPress(MotionEvent e) {
-
-
-    }
+    public void onLongPress(MotionEvent e) {}
 
     @Override
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
         return false;
     }
-
+//methor for distance calculation between 2 points
     public double distanceCalc (double alt1, double lat1, double long1, double alt2, double lat2, double long2) {
-
         double zemR=6371;
         double sin_lat = Math.sin(Math.toRadians((lat2 - lat1)/2));
         double sin_longt = Math.sin(Math.toRadians((long2 - long1)/2));
         double alt = alt2 - alt1;
         double rez_temp = sin_lat * sin_lat + (sin_longt * sin_longt *Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)));
-
         double rez = zemR * 2 * Math.atan2(Math.sqrt(rez_temp), Math.sqrt(1- rez_temp));
         return rez;
     }
 
-
+// class for thread to wait Stop button trigger
     class ExtThread extends Thread {
 
         @Override
@@ -276,15 +252,10 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                             distance = 0;
                             distanceText.setText(String.format("%.2f", distance). toString() + "км");
                             progressBar.setVisibility(View.INVISIBLE);
-                            ifResset = true;
+                            ifReset = true;
                         }
                     });
-
-
-
-
                 }}
             }
         }
-
 }
