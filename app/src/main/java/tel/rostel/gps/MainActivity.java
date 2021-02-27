@@ -45,11 +45,31 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private final Handler mainHandler = new Handler();
     private double lat1=0, lat2=0, long1=0, long2=0, alt1=0, alt2=0, distance = 0;
 
+// For sensor
+
+
+
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+//For sensor
+
+
+
+
+
+//For sensor FINISHED
+
+
+
+
+
+
         chronometer = findViewById(R.id.chronometer);
         button = (Button) findViewById(R.id.button);
         button_reset = (Button) findViewById(R.id.resetButton);
