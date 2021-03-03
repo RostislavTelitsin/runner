@@ -154,4 +154,15 @@
         app:layout_constraintBottom_toTopOf="@+id/chronometer"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
+    <EditText
+        android:id="@+id/editTextTextSensorMonitor"
+        android:layout_width="199dp"
+        android:layout_height="559dp"
+        android:ems="10"
+        android:gravity="start|top"
+        android:inputType="textMultiLine"
+        android:textSize="8sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

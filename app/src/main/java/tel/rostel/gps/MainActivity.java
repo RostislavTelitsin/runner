@@ -1,18 +1,26 @@
 package tel.rostel.gps;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
+import android.bluetooth.BluetoothSocket;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-
 import android.graphics.Color;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
@@ -20,15 +28,26 @@ import android.provider.Settings;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnLongClickListener;
 import android.widget.Button;
 import android.widget.Chronometer;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 
 public class MainActivity extends AppCompatActivity implements View.OnTouchListener, GestureDetector.OnGestureListener {
+
     public int i = 0;
     private Button button;//Button Start to start workout
     private Button button_reset;//Button Stop to stop workout
@@ -45,11 +64,31 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private final Handler mainHandler = new Handler();
     private double lat1=0, lat2=0, long1=0, long2=0, alt1=0, alt2=0, distance = 0;
 
-// For sensor
 
 
 
+    // For sensor
+    private EditText sensorMonitor;//sensor monitor
 
+    public final static UUID UUID_HEART_RATE_MEASUREMENT =
+            UUID.fromString("0000180d-0000-1000-8000-00805f9b34fb");
+    private BluetoothManager bluetoothManager;
+    private BluetoothAdapter mBluetoothAdapter;
+    private String bluetoothDeviceAddress;
+    private BluetoothGatt bluetoothGatt;
+    private BluetoothDevice mySensor;
+    private BluetoothLeScanner myScan;
+    private boolean weGotIt = false;
+    private String hhhhh = "";
+
+
+    private BluetoothGattCharacteristic characteristic;
+    private BluetoothGattCallback callback;
+
+
+// For sensor FINISH
+
+    @RequiresApi(api = Build.VERSION_CODES.R)
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,12 +97,127 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
 
 //For sensor
+        sensorMonitor = (EditText) findViewById(R.id.editTextTextSensorMonitor);
+
+        bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        mBluetoothAdapter = bluetoothManager.getAdapter();
+        if (mBluetoothAdapter.isEnabled()) {
+            sensorMonitor.append("mBluetoothAdapter.isEnabled\n");
+        }
+        Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
+        mySensor = mBluetoothAdapter.getRemoteDevice("00:22:D0:80:7F:7A");
+
+        int state = mySensor.getBondState();
+        BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {};
+        BluetoothGatt btGatt = mySensor.connectGatt(getApplicationContext(), false, mGattCallback, BluetoothDevice.TRANSPORT_LE);
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+
+        bluetoothManager.getConnectedDevices(BluetoothProfile.GATT_SERVER);
+
+        btGatt.discoverServices();
+
+        String aboutbtGatt = btGatt.toString();
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+
+        List<BluetoothGattService> bluetoothServices = btGatt.getServices();
+        btGatt.discoverServices();
+        for (int dicCount = 0; dicCount<10; dicCount++){
+            if (bluetoothServices.size()==0) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                bluetoothServices = btGatt.getServices();
+            } else break;
+        }
+        if (bluetoothServices.size()==0) {
+            sensorMonitor.append("датчик не подключен\n");
+        } else {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            BluetoothGattService btServ =  btGatt.getService(UUID.fromString("0000180d-0000-1000-8000-00805f9b34fb"));
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            List<BluetoothGattCharacteristic> btServCharacteristics = btServ.getCharacteristics();
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            BluetoothGattCharacteristic  myChar =  btServ.getCharacteristic(UUID.fromString("00002a37-0000-1000-8000-00805f9b34fb"));
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            btGatt.setCharacteristicNotification(myChar, true);
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            btGatt.readCharacteristic(myChar);
+
+            BluetoothGattDescriptor descriptor = myChar.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
+            byte[] hhh = descriptor.getValue();
+
+            if (btGatt.readCharacteristic(myChar)) {
+                sensorMonitor.append("Характеристика прочитана\n");
+            }
+            try {
+                hhhhh = myChar.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1).toString();
+                weGotIt = true;
+            } finally {
+
+            }
+
+
+            if (!weGotIt) {
+                sensorMonitor.append("не удается получить данные");
+            } else {
+
+                sensorMonitor.append(hhhhh);
+
+
+            }
+        }
 
 
 
 
 
-//For sensor FINISHED
+
+
+
+
+
+
+
+
+
+
+
+//        int heartbeet = myChar.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 2);
+//        sensorMonitor.setText(heartbeet);
+
+//For sensor FINISH
 
 
 
@@ -85,7 +239,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
 // button Stop is invisible till pause of workout
         button_reset.setVisibility(View.INVISIBLE);
-//Stat chronometer and workout
+//Start chronometer and workout
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -149,6 +303,35 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             configureButton();
         }
     }
+
+    private void sensorThread() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                UUID uuid = UUID.fromString(
+                        "00001101-0000-1000-8000-00805F9B34FB");
+                BluetoothSocket socket = null;
+                try {
+                    socket = mySensor.createInsecureRfcommSocketToServiceRecord(uuid);
+
+                    Thread.sleep(500);
+                    socket.connect();
+
+
+                    Toast tt = Toast.makeText(getApplicationContext(), "ЗАЕБИСЬ коннект", Toast.LENGTH_LONG);
+                    tt.show();
+
+                } catch (IOException | InterruptedException e) {
+                    e.printStackTrace();
+                    Toast tt = Toast.makeText(getApplicationContext(), "Хер коннект", Toast.LENGTH_LONG);
+                    tt.show();
+                }
+            }
+        }).start();
+    }
+
+
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         switch (requestCode) {
@@ -181,7 +364,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             chronometer.stop();
             pauseOffset = SystemClock.elapsedRealtime() - chronometer.getBase();
             isRunning = false;
-
         }
     }
 
@@ -245,6 +427,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         return rez;
     }
 
+
+
 // class for thread to wait Stop button trigger
     class ExtThread extends Thread {
 
@@ -278,4 +462,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 }}
             }
         }
+
+
 }
