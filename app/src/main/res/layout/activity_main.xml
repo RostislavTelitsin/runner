@@ -40,7 +40,7 @@
         app:layout_constraintVertical_bias="0.819" />
 
     <EditText
-        android:id="@+id/editTextLatitude"
+        android:id="@+id/textLatitude"
         android:layout_width="155dp"
         android:layout_height="42dp"
         android:layout_marginStart="16dp"
@@ -55,7 +55,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
-        android:id="@+id/editTextLongitude"
+        android:id="@+id/textLongitude"
         style="@android:style/Widget.EditText"
         android:layout_width="118dp"
         android:layout_height="42dp"
@@ -70,11 +70,11 @@
         android:textColor="#00FFC3"
         android:textSize="8sp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/editTextLatitude"
+        app:layout_constraintStart_toEndOf="@+id/textLatitude"
         app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
-        android:id="@+id/editTextAltitude"
+        android:id="@+id/textAltitude"
         android:layout_width="155dp"
         android:layout_height="42dp"
         android:layout_marginStart="16dp"
@@ -86,7 +86,7 @@
         android:textColor="#1EF6C3"
         android:textSize="8sp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/editTextLatitude" />
+        app:layout_constraintTop_toBottomOf="@+id/textLatitude" />
 
     <Chronometer
         android:id="@+id/chronometer"
@@ -132,7 +132,7 @@
         app:layout_constraintStart_toStartOf="@+id/guideline2"
         app:layout_constraintTop_toBottomOf="@+id/chronometer" />
 
-    <EditText
+    <TextView
         android:id="@+id/editTextTextPersonName2"
         android:layout_width="147dp"
         android:layout_height="33dp"
@@ -143,7 +143,7 @@
         app:layout_constraintStart_toStartOf="@+id/guideline2"
         app:layout_constraintTop_toBottomOf="@+id/textViewDistance" />
 
-    <EditText
+    <TextView
         android:id="@+id/editTextTextPersonName3"
         android:layout_width="147dp"
         android:layout_height="33dp"
@@ -154,8 +154,8 @@
         app:layout_constraintBottom_toTopOf="@+id/chronometer"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
-    <EditText
-        android:id="@+id/editTextTextSensorMonitor"
+    <TextView
+        android:id="@+id/textSensorMonitor"
         android:layout_width="199dp"
         android:layout_height="559dp"
         android:ems="10"

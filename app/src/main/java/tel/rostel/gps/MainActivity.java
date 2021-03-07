@@ -15,6 +15,7 @@ import android.bluetooth.BluetoothSocket;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.location.Location;
@@ -23,14 +24,15 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
+import android.text.TextUtils;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Chronometer;
-import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -63,12 +65,13 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private boolean ifReset = false;
     private final Handler mainHandler = new Handler();
     private double lat1=0, lat2=0, long1=0, long2=0, alt1=0, alt2=0, distance = 0;
+    private long backPressedTime;
 
 
 
 
     // For sensor
-    private EditText sensorMonitor;//sensor monitor
+    private TextView sensorMonitor;//sensor monitor
 
     public final static UUID UUID_HEART_RATE_MEASUREMENT =
             UUID.fromString("0000180d-0000-1000-8000-00805f9b34fb");
@@ -93,11 +96,18 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         setContentView(R.layout.activity_main);
 
 
+// background work
+    PowerManager pwmng = (PowerManager)getSystemService(Context.POWER_SERVICE);
+    @SuppressLint("InvalidWakeLockTag") PowerManager.WakeLock wakeLock = pwmng.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyWakeLock");
+    wakeLock.acquire();
+
+
 //For sensor
-        sensorMonitor = (EditText) findViewById(R.id.editTextTextSensorMonitor);
+        sensorMonitor = (TextView) findViewById(R.id.textSensorMonitor);
 
         bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
@@ -118,6 +128,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
 
         bluetoothManager.getConnectedDevices(BluetoothProfile.GATT_SERVER);
+
 
         btGatt.discoverServices();
 
@@ -192,11 +203,74 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             if (!weGotIt) {
                 sensorMonitor.append("не удается получить данные");
             } else {
-
-                sensorMonitor.append(hhhhh);
-
+                sensorMonitor.append(hhhhh + "\n");
+                weGotIt = false;
+            }
+//попробую еще
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            try {
+                hhhhh = myChar.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1).toString();
+                weGotIt = true;
+            } finally {
 
             }
+
+
+            if (!weGotIt) {
+                sensorMonitor.append("не удается получить данные");
+            } else {
+                sensorMonitor.append(hhhhh + "\n");
+                weGotIt = false;
+            }
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                hhhhh = myChar.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1).toString();
+                weGotIt = true;
+            } finally {
+
+            }
+
+
+            if (!weGotIt) {
+                sensorMonitor.append("не удается получить данные");
+            } else {
+                sensorMonitor.append(hhhhh + "\n");
+                weGotIt = false;
+            }
+
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                hhhhh = myChar.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1).toString();
+                weGotIt = true;
+            } finally {
+
+            }
+
+
+            if (!weGotIt) {
+                sensorMonitor.append("не удается получить данные");
+            } else {
+                sensorMonitor.append(hhhhh + "\n");
+                weGotIt = false;
+            }
+
+
+
+
         }
 
 
@@ -227,9 +301,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         chronometer = findViewById(R.id.chronometer);
         button = (Button) findViewById(R.id.button);
         button_reset = (Button) findViewById(R.id.resetButton);
-        EditText t_lat = (EditText) findViewById(R.id.editTextLatitude);
-        EditText t_long = (EditText) findViewById(R.id.editTextLongitude);
-        EditText t_alt = (EditText) findViewById(R.id.editTextAltitude);
+        TextView t_lat = (TextView) findViewById(R.id.textLatitude);
+        TextView t_long = (TextView) findViewById(R.id.textLongitude);
+        TextView t_alt = (TextView) findViewById(R.id.textAltitude);
         distanceText = (TextView) findViewById(R.id.textViewDistance);
 
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
@@ -249,59 +323,96 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
 
 //obtaining of location
-        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        locationListener = new LocationListener() {
-            @SuppressLint(value = "SetTextI18n")
-            @Override
-            public void onLocationChanged(@NonNull Location location) {
-                t_alt.setText(Double.toString(location.getAltitude()));
-                t_lat.setText(Double.toString(location.getLatitude()));
-                t_long.setText(Double.toString(location.getLongitude()));
-                if (isRunning) {
-                    if (lat1==0 && long1==0){
+        if (isLocationEnabled(getBaseContext())) {
+            locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+            locationListener = new LocationListener() {
+                @SuppressLint(value = "SetTextI18n")
+                @Override
+                public void onLocationChanged(@NonNull Location location) {
+                    t_alt.setText(Double.toString(location.getAltitude()));
+                    t_lat.setText(Double.toString(location.getLatitude()));
+                    t_long.setText(Double.toString(location.getLongitude()));
+                    if (isRunning) {
+                        if (lat1==0 && long1==0){
+                            alt1=alt2;
+                            lat1=lat2;
+                            long1=long2;
+                            alt2=location.getAltitude();
+                            lat2=location.getLatitude();
+                            long2=location.getLongitude();
+                        } else {
+                            alt1=alt2;
+                            lat1=lat2;
+                            long1=long2;
+                            alt2=location.getAltitude();
+                            lat2=location.getLatitude();
+                            long2=location.getLongitude();
+                            distance = distance + distanceCalc(alt1, lat1, long1, alt2, lat2, long2);
+                            distanceText.setText(String.format("%.2f", distance). toString() + "км");
+                        }
+                    }else {
                         alt1=alt2;
                         lat1=lat2;
                         long1=long2;
                         alt2=location.getAltitude();
                         lat2=location.getLatitude();
                         long2=location.getLongitude();
-                    } else {
-                        alt1=alt2;
-                        lat1=lat2;
-                        long1=long2;
-                        alt2=location.getAltitude();
-                        lat2=location.getLatitude();
-                        long2=location.getLongitude();
-                        distance = distance + distanceCalc(alt1, lat1, long1, alt2, lat2, long2);
-                        distanceText.setText(String.format("%.2f", distance). toString() + "км");
                     }
-                }else {
-                    alt1=alt2;
-                    lat1=lat2;
-                    long1=long2;
-                    alt2=location.getAltitude();
-                    lat2=location.getLatitude();
-                    long2=location.getLongitude();
                 }
-            }
 
-            @Override
-            public void onProviderEnabled(@NonNull String provider) {}
-            @Override
-            public void onStatusChanged(String provider, int status, Bundle extras) {}
+                @Override
+                public void onProviderEnabled(@NonNull String provider) {}
+                @Override
+                public void onStatusChanged(String provider, int status, Bundle extras) {}
 
-            public void onProciderDisabled(String s){
-                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                startActivity(intent);
+                public void onProciderDisabled(String s){
+                    Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    startActivity(intent);
+                }
+            };
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.INTERNET
+                }, 10);
+            }else {
+                configureButton();
             }
-        };
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{
-                Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.INTERNET
-            }, 10);
-        }else {
-            configureButton();
+        } else {
+            Toast.makeText(getBaseContext(), "определение местоположения отключено\nпроверь настройки", Toast.LENGTH_LONG).show();
         }
+
+    }
+
+    public static boolean isLocationEnabled(Context context) {
+        int locationMode = 0;
+        String locationProviders;
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT){
+            try {
+                locationMode = Settings.Secure.getInt(context.getContentResolver(), Settings.Secure.LOCATION_MODE);
+
+            } catch (Settings.SettingNotFoundException e) {
+                e.printStackTrace();
+                return false;
+            }
+
+            return locationMode != Settings.Secure.LOCATION_MODE_OFF;
+
+        }else{
+            locationProviders = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.LOCATION_PROVIDERS_ALLOWED);
+            return !TextUtils.isEmpty(locationProviders);
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (backPressedTime + 2000 > System.currentTimeMillis()) {
+            super.onBackPressed();
+            return;
+        } else {
+            Toast.makeText(getBaseContext(), "Вы уверены! \n нажмите ВЫХОД еще", Toast.LENGTH_SHORT).show();
+        }
+        backPressedTime = System.currentTimeMillis();
     }
 
     private void sensorThread() {
