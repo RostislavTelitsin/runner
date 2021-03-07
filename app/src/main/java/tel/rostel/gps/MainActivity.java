@@ -24,6 +24,7 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.ParcelUuid;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
@@ -44,7 +45,6 @@ import androidx.core.app.ActivityCompat;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 
@@ -64,6 +64,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private volatile boolean stopthread = false;
     private boolean ifReset = false;
     private final Handler mainHandler = new Handler();
+    private final Handler mainHandler2 = new Handler();
     private double lat1=0, lat2=0, long1=0, long2=0, alt1=0, alt2=0, distance = 0;
     private long backPressedTime;
 
@@ -71,7 +72,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
 
     // For sensor
-    private TextView sensorMonitor;//sensor monitor
+    public TextView sensorMonitor;//sensor monitor
+    public TextView heartRateMonitor;//sensor monitor
+
 
     public final static UUID UUID_HEART_RATE_MEASUREMENT =
             UUID.fromString("0000180d-0000-1000-8000-00805f9b34fb");
@@ -82,11 +85,13 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private BluetoothDevice mySensor;
     private BluetoothLeScanner myScan;
     private boolean weGotIt = false;
-    private String hhhhh = "";
+    private int hhhhh ;
 
 
     private BluetoothGattCharacteristic characteristic;
     private BluetoothGattCallback callback;
+
+
 
 
 // For sensor FINISH
@@ -101,195 +106,19 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
 
 // background work
-    PowerManager pwmng = (PowerManager)getSystemService(Context.POWER_SERVICE);
-    @SuppressLint("InvalidWakeLockTag") PowerManager.WakeLock wakeLock = pwmng.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyWakeLock");
-    wakeLock.acquire();
+        PowerManager pwmng = (PowerManager)getSystemService(Context.POWER_SERVICE);
+        @SuppressLint("InvalidWakeLockTag") PowerManager.WakeLock wakeLock = pwmng.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyWakeLock");
+        wakeLock.acquire();
 
 
 //For sensor
+
         sensorMonitor = (TextView) findViewById(R.id.textSensorMonitor);
+        heartRateMonitor = (TextView) findViewById(R.id.textViewHeartRate);
+        ExtTreadSensor extTreadSensor = new ExtTreadSensor();
+        new Thread(extTreadSensor).start();
+//        extTreadSensor.start();
 
-        bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-        mBluetoothAdapter = bluetoothManager.getAdapter();
-        if (mBluetoothAdapter.isEnabled()) {
-            sensorMonitor.append("mBluetoothAdapter.isEnabled\n");
-        }
-        Set<BluetoothDevice> devices = mBluetoothAdapter.getBondedDevices();
-        mySensor = mBluetoothAdapter.getRemoteDevice("00:22:D0:80:7F:7A");
-
-        int state = mySensor.getBondState();
-        BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {};
-        BluetoothGatt btGatt = mySensor.connectGatt(getApplicationContext(), false, mGattCallback, BluetoothDevice.TRANSPORT_LE);
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-
-        bluetoothManager.getConnectedDevices(BluetoothProfile.GATT_SERVER);
-
-
-        btGatt.discoverServices();
-
-        String aboutbtGatt = btGatt.toString();
-        try {
-            Thread.sleep(500);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
-
-        List<BluetoothGattService> bluetoothServices = btGatt.getServices();
-        btGatt.discoverServices();
-        for (int dicCount = 0; dicCount<10; dicCount++){
-            if (bluetoothServices.size()==0) {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                bluetoothServices = btGatt.getServices();
-            } else break;
-        }
-        if (bluetoothServices.size()==0) {
-            sensorMonitor.append("датчик не подключен\n");
-        } else {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            BluetoothGattService btServ =  btGatt.getService(UUID.fromString("0000180d-0000-1000-8000-00805f9b34fb"));
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            List<BluetoothGattCharacteristic> btServCharacteristics = btServ.getCharacteristics();
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            BluetoothGattCharacteristic  myChar =  btServ.getCharacteristic(UUID.fromString("00002a37-0000-1000-8000-00805f9b34fb"));
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            btGatt.setCharacteristicNotification(myChar, true);
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            btGatt.readCharacteristic(myChar);
-
-            BluetoothGattDescriptor descriptor = myChar.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
-            byte[] hhh = descriptor.getValue();
-
-            if (btGatt.readCharacteristic(myChar)) {
-                sensorMonitor.append("Характеристика прочитана\n");
-            }
-            try {
-                hhhhh = myChar.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1).toString();
-                weGotIt = true;
-            } finally {
-
-            }
-
-
-            if (!weGotIt) {
-                sensorMonitor.append("не удается получить данные");
-            } else {
-                sensorMonitor.append(hhhhh + "\n");
-                weGotIt = false;
-            }
-//попробую еще
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            try {
-                hhhhh = myChar.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1).toString();
-                weGotIt = true;
-            } finally {
-
-            }
-
-
-            if (!weGotIt) {
-                sensorMonitor.append("не удается получить данные");
-            } else {
-                sensorMonitor.append(hhhhh + "\n");
-                weGotIt = false;
-            }
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                hhhhh = myChar.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1).toString();
-                weGotIt = true;
-            } finally {
-
-            }
-
-
-            if (!weGotIt) {
-                sensorMonitor.append("не удается получить данные");
-            } else {
-                sensorMonitor.append(hhhhh + "\n");
-                weGotIt = false;
-            }
-
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            try {
-                hhhhh = myChar.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1).toString();
-                weGotIt = true;
-            } finally {
-
-            }
-
-
-            if (!weGotIt) {
-                sensorMonitor.append("не удается получить данные");
-            } else {
-                sensorMonitor.append(hhhhh + "\n");
-                weGotIt = false;
-            }
-
-
-
-
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//        int heartbeet = myChar.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 2);
-//        sensorMonitor.setText(heartbeet);
 
 //For sensor FINISH
 
@@ -297,8 +126,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
 
 
-
-        chronometer = findViewById(R.id.chronometer);
+//Start chronometer description
+        chronometer = findViewById(R.id.chronometerMonitor);
         button = (Button) findViewById(R.id.button);
         button_reset = (Button) findViewById(R.id.resetButton);
         TextView t_lat = (TextView) findViewById(R.id.textLatitude);
@@ -307,7 +136,6 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         distanceText = (TextView) findViewById(R.id.textViewDistance);
 
         progressBar = (ProgressBar) findViewById(R.id.progressBar);
-//        gestureDetector = new GestureDetector(this, this);
         button_reset.setOnTouchListener(this);
         progressBar.setVisibility(View.INVISIBLE);
 
@@ -320,7 +148,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 crono();
             }
         });
-
+//Stop chronometer description
 
 //obtaining of location
         if (isLocationEnabled(getBaseContext())) {
@@ -348,7 +176,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                             lat2=location.getLatitude();
                             long2=location.getLongitude();
                             distance = distance + distanceCalc(alt1, lat1, long1, alt2, lat2, long2);
-                            distanceText.setText(String.format("%.2f", distance). toString() + "км");
+                            distanceText.setText(String.format("%.4f", distance). toString() + "км");
                         }
                     }else {
                         alt1=alt2;
@@ -383,6 +211,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     }
 
+
+//is location enabled in settings?
     public static boolean isLocationEnabled(Context context) {
         int locationMode = 0;
         String locationProviders;
@@ -410,7 +240,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
             super.onBackPressed();
             return;
         } else {
-            Toast.makeText(getBaseContext(), "Вы уверены! \n нажмите ВЫХОД еще", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getBaseContext(), "Вы уверены? \n нажмите ВЫХОД еще", Toast.LENGTH_SHORT).show();
         }
         backPressedTime = System.currentTimeMillis();
     }
@@ -484,8 +314,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         if(event.getAction() == MotionEvent.ACTION_DOWN) {
             stopthread = false;
             progressBar.setVisibility(View.VISIBLE);
-            ExtThread extThread = new ExtThread();
-            extThread.start();
+            ExtThreadChrono extThreadChrono = new ExtThreadChrono();
+            extThreadChrono.start();
 
 
 //if button is released, stop timer. if timer is finished (isReset )
@@ -535,13 +365,14 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         double alt = alt2 - alt1;
         double rez_temp = sin_lat * sin_lat + (sin_longt * sin_longt *Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)));
         double rez = zemR * 2 * Math.atan2(Math.sqrt(rez_temp), Math.sqrt(1- rez_temp));
+        if (rez<0.001) {rez = 0;}
         return rez;
     }
 
 
 
 // class for thread to wait Stop button trigger
-    class ExtThread extends Thread {
+    class ExtThreadChrono extends Thread {
 
         @Override
         public void run(){
@@ -573,6 +404,215 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                 }}
             }
         }
+    class ExtTreadSensor implements Runnable {
 
+        @Override
+        public void run() {
+            boolean isBtWork = true;
+
+            while (isBtWork) {
+                bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+                mBluetoothAdapter = bluetoothManager.getAdapter();
+
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                if (mBluetoothAdapter.isEnabled()) {
+
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            sensorMonitor = (TextView) findViewById(R.id.textSensorMonitor);
+                            heartRateMonitor = (TextView) findViewById(R.id.textViewHeartRate);
+                            sensorMonitor.append("mBluetoothAdapter.isEnabled\n");
+                            Toast tt = Toast.makeText(getApplicationContext(), "mBluetoothAdapter.isEnabled", Toast.LENGTH_LONG);
+                            tt.show();
+                        }
+                    });
+
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+//                    BluetoothLeScanner bluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
+//                    bluetoothLeScanner.startScan(new ScanCallback() {
+//                        @Override
+//                        @TargetApi(21)
+//                        public void onScanResult(int callbackType, ScanResult result) {
+//                            List<ParcelUuid> uuids = result.getScanRecord().getServiceUuids();
+//                        }
+//                    });
+
+
+
+
+
+
+                    mySensor = mBluetoothAdapter.getRemoteDevice("00:22:D0:80:7F:7A");
+
+                    int state = mySensor.getBondState();
+                    ParcelUuid[] xxx=mySensor.getUuids();
+                    BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {};
+                    BluetoothGatt btGatt = mySensor.connectGatt(getApplicationContext(), false, mGattCallback, BluetoothDevice.TRANSPORT_LE);
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+
+
+                    bluetoothManager.getConnectedDevices(BluetoothProfile.GATT_SERVER);
+
+
+                    btGatt.discoverServices();
+
+                    String aboutbtGatt = btGatt.toString();
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+
+                    List<BluetoothGattService> bluetoothServices = btGatt.getServices();
+                    btGatt.discoverServices();
+                    for (int dicCount = 0; dicCount < 10; dicCount++) {
+                        if (bluetoothServices.size() == 0) {
+                            try {
+                                Thread.sleep(500);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            bluetoothServices = btGatt.getServices();
+                        } else break;
+                    }
+                    if (bluetoothServices.size() == 0) {
+                        mainHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                sensorMonitor.append("sensor is NOT available\n");
+                            }
+                        });
+
+
+                    } else {
+                        mainHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                sensorMonitor.append("sensor is available\n");
+                            }
+                        });
+
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        BluetoothGattService btServ = btGatt.getService(UUID.fromString("0000180d-0000-1000-8000-00805f9b34fb"));
+                        if (btServ!=null) {
+                            boolean huynya = true;
+                        }
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        List<BluetoothGattCharacteristic> btServCharacteristics = btServ.getCharacteristics();
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        BluetoothGattCharacteristic myChar = btServ.getCharacteristic(UUID.fromString("00002a37-0000-1000-8000-00805f9b34fb"));
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        btGatt.setCharacteristicNotification(myChar, true);
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        btGatt.readCharacteristic(myChar);
+
+                        BluetoothGattDescriptor descriptor = myChar.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
+                        byte[] hhh = descriptor.getValue();
+
+                        if (btGatt.readCharacteristic(myChar)) {
+                            mainHandler.post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    sensorMonitor.append("Характеристика прочитана\n");
+                                }
+                            });
+
+                        }
+
+                        boolean isCheckHeartBeat = true;
+                        while (isCheckHeartBeat) {
+                            try {
+                                hhhhh = myChar.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1);
+                                weGotIt = true;
+                            } finally {}
+                            if (hhhhh ==0) {
+                                mainHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        heartRateMonitor.setTextSize(8);
+                                        heartRateMonitor.setText("не удается получить данные");
+                                    }
+                                });
+
+                            } else {
+
+                                mainHandler.post(new Runnable() {
+                                    @Override
+                                    public void run() {
+
+                                        heartRateMonitor.setTextSize(36);
+                                        heartRateMonitor.setText(Integer.toString(hhhhh));
+                                    }
+                                });
+
+                                weGotIt = false;
+                            }
+                            try {
+                                Thread.sleep(2000);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+
+
+
+
+                    }
+                } else {
+                    mainHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            sensorMonitor = (TextView) findViewById(R.id.textSensorMonitor);
+                            sensorMonitor.append("mBluetoothAdapter no enabled\n");
+                            Toast tt = Toast.makeText(getApplicationContext(), "mBluetoothAdapter.is NOT Enabled", Toast.LENGTH_LONG);
+                            tt.show();
+                        }
+                    });
+
+
+                }
+            }
+
+
+
+
+        }
+    }
 
 }

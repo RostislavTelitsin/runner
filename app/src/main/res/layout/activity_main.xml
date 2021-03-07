@@ -39,7 +39,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.819" />
 
-    <EditText
+    <TextView
         android:id="@+id/textLatitude"
         android:layout_width="155dp"
         android:layout_height="42dp"
@@ -54,7 +54,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <EditText
+    <TextView
         android:id="@+id/textLongitude"
         style="@android:style/Widget.EditText"
         android:layout_width="118dp"
@@ -73,7 +73,7 @@
         app:layout_constraintStart_toEndOf="@+id/textLatitude"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <EditText
+    <TextView
         android:id="@+id/textAltitude"
         android:layout_width="155dp"
         android:layout_height="42dp"
@@ -89,9 +89,10 @@
         app:layout_constraintTop_toBottomOf="@+id/textLatitude" />
 
     <Chronometer
-        android:id="@+id/chronometer"
+        android:id="@+id/chronometerMonitor"
         android:layout_width="154dp"
         android:layout_height="83dp"
+        android:gravity="top"
         android:hint="00:00"
         android:inputType="time"
         android:textColor="#D30808"
@@ -124,13 +125,30 @@
         android:id="@+id/textViewDistance"
         android:layout_width="189dp"
         android:layout_height="50dp"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="16dp"
+        android:gravity="bottom"
         android:hint="0.0"
         android:textColor="#D30808"
         android:textColorHint="#D30808"
         android:textSize="36sp"
         app:layout_constraintStart_toStartOf="@+id/guideline2"
-        app:layout_constraintTop_toBottomOf="@+id/chronometer" />
+        app:layout_constraintTop_toBottomOf="@+id/chronometerMonitor" />
+
+    <TextView
+        android:id="@+id/textViewHeartRate"
+        android:layout_width="94dp"
+        android:layout_height="50dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:gravity="bottom"
+        android:hint="0.0"
+        android:textColor="#D30808"
+        android:textColorHint="#D30808"
+        android:textSize="36sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="@+id/guideline4"
+        app:layout_constraintTop_toBottomOf="@+id/chronometerMonitor" />
 
     <TextView
         android:id="@+id/editTextTextPersonName2"
@@ -138,31 +156,52 @@
         android:layout_height="33dp"
         android:background="@android:color/transparent"
         android:ems="10"
+        android:gravity="top"
         android:inputType="textPersonName"
         android:text="Distance"
         app:layout_constraintStart_toStartOf="@+id/guideline2"
         app:layout_constraintTop_toBottomOf="@+id/textViewDistance" />
 
     <TextView
-        android:id="@+id/editTextTextPersonName3"
+        android:id="@+id/editTextTextPersonName"
         android:layout_width="147dp"
         android:layout_height="33dp"
         android:background="@android:color/transparent"
         android:ems="10"
+        android:gravity="top"
+        android:inputType="textPersonName"
+        android:text="Heart Rate"
+        app:layout_constraintStart_toStartOf="@+id/guideline4"
+        app:layout_constraintTop_toBottomOf="@+id/textViewHeartRate" />
+
+    <TextView
+        android:id="@+id/editTextTextPersonName3"
+        android:layout_width="145dp"
+        android:layout_height="24dp"
+        android:background="@android:color/transparent"
+        android:ems="10"
+        android:gravity="bottom"
         android:inputType="textPersonName"
         android:text="Time"
-        app:layout_constraintBottom_toTopOf="@+id/chronometer"
+        app:layout_constraintBottom_toTopOf="@+id/chronometerMonitor"
         app:layout_constraintStart_toStartOf="@+id/guideline2" />
 
     <TextView
         android:id="@+id/textSensorMonitor"
-        android:layout_width="199dp"
-        android:layout_height="559dp"
+        android:layout_width="206dp"
+        android:layout_height="403dp"
         android:ems="10"
         android:gravity="start|top"
         android:inputType="textMultiLine"
         android:textSize="8sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline4"
+        app:layout_constraintGuide_percent="0.7"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
