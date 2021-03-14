@@ -24,7 +24,6 @@ import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.ParcelUuid;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
@@ -45,6 +44,7 @@ import androidx.core.app.ActivityCompat;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 
@@ -65,7 +65,9 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     private boolean ifReset = false;
     private final Handler mainHandler = new Handler();
     private final Handler mainHandler2 = new Handler();
-    private double lat1=0, lat2=0, long1=0, long2=0, alt1=0, alt2=0, distance = 0;
+    private double distance = 0;
+    private final Coordinates currentCoordinates = new Coordinates(0,  0,  0);
+    private Coordinates prevCoordinates = new Coordinates(0,  0,  0);
     private long backPressedTime;
 
 
@@ -78,14 +80,11 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
     public final static UUID UUID_HEART_RATE_MEASUREMENT =
             UUID.fromString("0000180d-0000-1000-8000-00805f9b34fb");
-    private BluetoothManager bluetoothManager;
-    private BluetoothAdapter mBluetoothAdapter;
     private String bluetoothDeviceAddress;
     private BluetoothGatt bluetoothGatt;
     private BluetoothDevice mySensor;
     private BluetoothLeScanner myScan;
-    private boolean weGotIt = false;
-    private int hhhhh ;
+    private int hearbitRate ;
 
 
     private BluetoothGattCharacteristic characteristic;
@@ -117,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         heartRateMonitor = (TextView) findViewById(R.id.textViewHeartRate);
         ExtTreadSensor extTreadSensor = new ExtTreadSensor();
         new Thread(extTreadSensor).start();
-//        extTreadSensor.start();
+
 
 
 //For sensor FINISH
@@ -151,6 +150,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 //Stop chronometer description
 
 //obtaining of location
+
+
         if (isLocationEnabled(getBaseContext())) {
             locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
             locationListener = new LocationListener() {
@@ -161,30 +162,20 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                     t_lat.setText(Double.toString(location.getLatitude()));
                     t_long.setText(Double.toString(location.getLongitude()));
                     if (isRunning) {
-                        if (lat1==0 && long1==0){
-                            alt1=alt2;
-                            lat1=lat2;
-                            long1=long2;
-                            alt2=location.getAltitude();
-                            lat2=location.getLatitude();
-                            long2=location.getLongitude();
+                        if (prevCoordinates.latitude==0 && prevCoordinates.longitude==0){
+                            prevCoordinates = currentCoordinates;
+                            currentCoordinates.setAll(location.getLatitude(), location.getLongitude(), location.getAltitude());
+
                         } else {
-                            alt1=alt2;
-                            lat1=lat2;
-                            long1=long2;
-                            alt2=location.getAltitude();
-                            lat2=location.getLatitude();
-                            long2=location.getLongitude();
-                            distance = distance + distanceCalc(alt1, lat1, long1, alt2, lat2, long2);
+                            prevCoordinates = currentCoordinates;
+                            currentCoordinates.setAll(location.getLatitude(), location.getLongitude(), location.getAltitude());
+
+                            distance = distance + distanceCalc(prevCoordinates, currentCoordinates);
                             distanceText.setText(String.format("%.4f", distance). toString() + "км");
                         }
                     }else {
-                        alt1=alt2;
-                        lat1=lat2;
-                        long1=long2;
-                        alt2=location.getAltitude();
-                        lat2=location.getLatitude();
-                        long2=location.getLongitude();
+                        prevCoordinates = currentCoordinates;
+                        currentCoordinates.setAll(location.getLatitude(), location.getLongitude(), location.getAltitude());
                     }
                 }
 
@@ -357,13 +348,14 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
         return false;
     }
+
 //methor for distance calculation between 2 points
-    public double distanceCalc (double alt1, double lat1, double long1, double alt2, double lat2, double long2) {
+    public double distanceCalc (Coordinates firstPoint, Coordinates secondPoint) {
         double zemR=6371;
-        double sin_lat = Math.sin(Math.toRadians((lat2 - lat1)/2));
-        double sin_longt = Math.sin(Math.toRadians((long2 - long1)/2));
-        double alt = alt2 - alt1;
-        double rez_temp = sin_lat * sin_lat + (sin_longt * sin_longt *Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)));
+        double sin_lat = Math.sin(Math.toRadians((secondPoint.latitude - firstPoint.latitude)/2));
+        double sin_longt = Math.sin(Math.toRadians((secondPoint.longitude - firstPoint.longitude)/2));
+        double alt = secondPoint.altitude - firstPoint.altitude;
+        double rez_temp = sin_lat * sin_lat + (sin_longt * sin_longt *Math.cos(Math.toRadians(firstPoint.latitude)) * Math.cos(Math.toRadians(secondPoint.latitude)));
         double rez = zemR * 2 * Math.atan2(Math.sqrt(rez_temp), Math.sqrt(1- rez_temp));
         if (rez<0.001) {rez = 0;}
         return rez;
@@ -409,16 +401,15 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
         @Override
         public void run() {
             boolean isBtWork = true;
+            boolean isSensorFound = false;
+            BluetoothGattCallback mGattCallback;
+            BluetoothGatt btGatt;
 
             while (isBtWork) {
-                bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-                mBluetoothAdapter = bluetoothManager.getAdapter();
+                BluetoothManager bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+                BluetoothAdapter mBluetoothAdapter = bluetoothManager.getAdapter();
+                SystemClock.sleep(100);
 
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
                 if (mBluetoothAdapter.isEnabled()) {
 
                     mainHandler.post(new Runnable() {
@@ -432,58 +423,88 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                         }
                     });
 
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+
+                    SystemClock.sleep(100);
+
+                    String aboutbtGatt;
+                    List<BluetoothGattService> bluetoothServices;
+                    String sensorAddr = null; 
+                    Set<BluetoothDevice> btDevices = (Set<BluetoothDevice>) mBluetoothAdapter.getBondedDevices();
+
+
+                    while (!isSensorFound) {
+                        for (BluetoothDevice dev : btDevices) {
+                            SystemClock.sleep(100);
+                            String adr = dev.getAddress();
+                            SystemClock.sleep(100);
+                            mySensor = mBluetoothAdapter.getRemoteDevice(adr);
+                            mGattCallback = new BluetoothGattCallback() {};
+                            btGatt = mySensor.connectGatt(getApplicationContext(), false, mGattCallback, BluetoothDevice.TRANSPORT_LE);
+
+                            SystemClock.sleep(100);
+                            bluetoothManager.getConnectedDevices(BluetoothProfile.GATT_SERVER);
+                            btGatt.discoverServices();
+                            aboutbtGatt = btGatt.toString();
+                            SystemClock.sleep(100);
+                            bluetoothServices = btGatt.getServices();
+                            btGatt.discoverServices();
+                            for (int dicCount = 0; dicCount < 10; dicCount++) {
+                                if (bluetoothServices.size() == 0) {
+                                    try {
+                                        Thread.sleep(100);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                    }
+                                    mySensor = mBluetoothAdapter.getRemoteDevice(adr);
+                                    mGattCallback = new BluetoothGattCallback() {};
+                                    btGatt = mySensor.connectGatt(getApplicationContext(), false, mGattCallback, BluetoothDevice.TRANSPORT_LE);
+
+                                    SystemClock.sleep(100);
+                                    bluetoothManager.getConnectedDevices(BluetoothProfile.GATT_SERVER);
+                                    btGatt.discoverServices();
+                                    aboutbtGatt = btGatt.toString();
+                                    SystemClock.sleep(100);
+
+
+                                    bluetoothServices = btGatt.getServices();
+                                } else break;
+                            }
+                            if (bluetoothServices.size()!=0) {
+                                for (BluetoothGattService serv: bluetoothServices) {
+                                    String servUuid = serv.getUuid().toString();
+                                    if (servUuid.equals("0000180d-0000-1000-8000-00805f9b34fb")) {
+                                        isSensorFound = true;
+                                        sensorAddr = adr;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (isSensorFound) break;
+                        };
                     }
-//                    BluetoothLeScanner bluetoothLeScanner = mBluetoothAdapter.getBluetoothLeScanner();
-//                    bluetoothLeScanner.startScan(new ScanCallback() {
-//                        @Override
-//                        @TargetApi(21)
-//                        public void onScanResult(int callbackType, ScanResult result) {
-//                            List<ParcelUuid> uuids = result.getScanRecord().getServiceUuids();
-//                        }
-//                    });
 
 
 
 
+//                    if (!isSensorFound) {
+//                        mySensor = mBluetoothAdapter.getRemoteDevice("00:22:D0:80:7F:7A");
+//                    } else mySensor = mBluetoothAdapter.getRemoteDevice(sensorAddr);
 
+                    mySensor = mBluetoothAdapter.getRemoteDevice(sensorAddr);
 
-                    mySensor = mBluetoothAdapter.getRemoteDevice("00:22:D0:80:7F:7A");
-
-                    int state = mySensor.getBondState();
-                    ParcelUuid[] xxx=mySensor.getUuids();
-                    BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {};
-                    BluetoothGatt btGatt = mySensor.connectGatt(getApplicationContext(), false, mGattCallback, BluetoothDevice.TRANSPORT_LE);
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-
-
+                    mGattCallback = new BluetoothGattCallback() {};
+                    btGatt = mySensor.connectGatt(getApplicationContext(), false, mGattCallback, BluetoothDevice.TRANSPORT_LE);
+                    SystemClock.sleep(100);
                     bluetoothManager.getConnectedDevices(BluetoothProfile.GATT_SERVER);
-
-
                     btGatt.discoverServices();
-
-                    String aboutbtGatt = btGatt.toString();
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-
-                    List<BluetoothGattService> bluetoothServices = btGatt.getServices();
+                    aboutbtGatt = btGatt.toString();
+                    SystemClock.sleep(100);
+                    bluetoothServices = btGatt.getServices();
                     btGatt.discoverServices();
                     for (int dicCount = 0; dicCount < 10; dicCount++) {
                         if (bluetoothServices.size() == 0) {
                             try {
-                                Thread.sleep(500);
+                                Thread.sleep(100);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
                             }
@@ -508,7 +529,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                         });
 
                         try {
-                            Thread.sleep(500);
+                            Thread.sleep(100);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
@@ -517,25 +538,25 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                             boolean huynya = true;
                         }
                         try {
-                            Thread.sleep(500);
+                            Thread.sleep(100);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                         List<BluetoothGattCharacteristic> btServCharacteristics = btServ.getCharacteristics();
                         try {
-                            Thread.sleep(500);
+                            Thread.sleep(100);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                         BluetoothGattCharacteristic myChar = btServ.getCharacteristic(UUID.fromString("00002a37-0000-1000-8000-00805f9b34fb"));
                         try {
-                            Thread.sleep(500);
+                            Thread.sleep(100);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                         btGatt.setCharacteristicNotification(myChar, true);
                         try {
-                            Thread.sleep(500);
+                            Thread.sleep(100);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
@@ -556,11 +577,12 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
 
                         boolean isCheckHeartBeat = true;
                         while (isCheckHeartBeat) {
+                            boolean weGotIt = false;
                             try {
-                                hhhhh = myChar.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1);
+                                hearbitRate = myChar.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1);
                                 weGotIt = true;
                             } finally {}
-                            if (hhhhh ==0) {
+                            if (hearbitRate ==0) {
                                 mainHandler.post(new Runnable() {
                                     @Override
                                     public void run() {
@@ -576,7 +598,7 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
                                     public void run() {
 
                                         heartRateMonitor.setTextSize(36);
-                                        heartRateMonitor.setText(Integer.toString(hhhhh));
+                                        heartRateMonitor.setText(Integer.toString(hearbitRate));
                                     }
                                 });
 
