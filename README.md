@@ -86,7 +86,7 @@ class ExtThreadChrono extends Thread {
         }
 ~~~
 
-**Bluetooth low energy** device is used to get heart-bit rate. Sometimes it's necessary to repeat request for **BLE** to get the response:
+**Bluetooth low energy** device is used to get heart-bit rate. Sometimes it's necessary to repeat request for **BLE** to get the response several times:
 
 ~~~
  mySensor = mBluetoothAdapter.getRemoteDevice(adr);
