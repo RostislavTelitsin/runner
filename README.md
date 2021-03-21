@@ -85,3 +85,35 @@ class ExtThreadChrono extends Thread {
             }
         }
 ~~~
+
+**Bluetooth low energy** device is used to get heart-bit rate. Sometimes it's necessary to repeat request for **BLE** to get the response:
+
+~~~
+ mySensor = mBluetoothAdapter.getRemoteDevice(adr);
+ mGattCallback = new BluetoothGattCallback() {};
+ btGatt = mySensor.connectGatt(getApplicationContext(), false, mGattCallback, Blue
+ SystemClock.sleep(100);
+ bluetoothManager.getConnectedDevices(BluetoothProfile.GATT_SERVER);
+ btGatt.discoverServices();
+ aboutbtGatt = btGatt.toString();
+ SystemClock.sleep(100);
+ bluetoothServices = btGatt.getServices();
+ btGatt.discoverServices();
+ for (int dicCount = 0; dicCount < 10; dicCount++) {
+     if (bluetoothServices.size() == 0) {
+         try {
+             Thread.sleep(100);
+         } catch (InterruptedException e) {
+             e.printStackTrace();
+         }
+         mySensor = mBluetoothAdapter.getRemoteDevice(adr);
+         mGattCallback = new BluetoothGattCallback() {};
+         btGatt = mySensor.connectGatt(getApplicationContext(), false, mGattCallback, Blue
+         SystemClock.sleep(100);
+         bluetoothManager.getConnectedDevices(BluetoothProfile.GATT_SERVER);
+         btGatt.discoverServices();
+         aboutbtGatt = btGatt.toString();
+      
+         bluetoothServices = btGatt.getServices();
+     } else break;
+~~~
